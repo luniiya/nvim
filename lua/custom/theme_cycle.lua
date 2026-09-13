@@ -2,6 +2,7 @@ local M = {}
 
 local state
 local seed_info
+local session_offset = 0
 local seed_file = vim.fn.stdpath("state") .. "/theme_seed"
 
 local function save_seed(info)
@@ -114,12 +115,12 @@ local function split_themes()
   return day, night
 end
 
-local function deterministic_index(pool, phase)
+local function deterministic_index(pool, phase, seed, extra_offset)
   if #pool == 0 then
     return 1
   end
-  local seed = load_seed()
-  local date_key = string.format("%s:%s:%d", seed.date, phase, seed.offset)
+  local offset = (seed.offset or 0) + (extra_offset or 0)
+  local date_key = string.format("%s:%s:%d", seed.date, phase, offset)
   local hash = vim.fn.sha256(date_key)
   local num = tonumber(hash:sub(1, 12), 16) or 0
 
@@ -138,9 +139,11 @@ local function compute()
   local main_pool = phase == "day" and day_themes or night_themes
   local secondary_pool = phase == "day" and night_themes or day_themes
 
-  local primary_idx = deterministic_index(main_pool, phase)
+  local extra_offset = session_offset
+
+  local primary_idx = deterministic_index(main_pool, phase, seed, extra_offset)
   local secondary_phase = phase == "day" and "night" or "day"
-  local secondary_idx = deterministic_index(secondary_pool, secondary_phase)
+  local secondary_idx = deterministic_index(secondary_pool, secondary_phase, seed, extra_offset)
 
   local primary = main_pool[primary_idx]
   local secondary = secondary_pool[secondary_idx]
@@ -182,9 +185,7 @@ function M.setup()
 end
 
 function M.shuffle()
-  local seed = load_seed()
-  seed.offset = seed.offset + 1
-  save_seed(seed)
+  session_offset = session_offset + 1
   state = nil
   return compute()
 end

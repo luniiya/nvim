@@ -58,6 +58,13 @@ local plugins = {
     end,
   },
   {
+    "nvimtools/none-ls.nvim",
+    event = { "BufReadPre", "BufNewFile" },
+    config = function()
+      require "custom.configs.none-ls"
+    end,
+  },
+  {
     "gbprod/substitute.nvim",
     opts = {
         -- your configuration comes here

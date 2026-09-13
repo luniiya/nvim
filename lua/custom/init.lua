@@ -1,5 +1,13 @@
 local theme_cycle = require "custom.theme_cycle"
 
+if vim.g.neovide then
+  vim.o.guifont = "JetBrainsMono Nerd Font:h13"
+  vim.g.neovide_padding_top = 8
+  vim.g.neovide_padding_bottom = 8
+  vim.g.neovide_padding_left = 10
+  vim.g.neovide_padding_right = 10
+end
+
 if vim.lsp and vim.lsp.get_clients and vim.lsp.get_active_clients then
   local original = vim.lsp.get_active_clients
   vim.lsp.get_active_clients = function(opts)
