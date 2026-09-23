@@ -153,8 +153,6 @@ local function compute()
     secondary = secondary_pool[secondary_idx]
   end
 
-  vim.o.background = phase == "day" and "light" or "dark"
-
   state = {
     primary = primary,
     secondary = secondary,

@@ -1,5 +1,18 @@
 local theme_cycle = require "custom.theme_cycle"
 
+-- The compiled base46 cache only regenerates on plugin install/update or a
+-- manual toggle, so a plain startup can render yesterday's compiled colors
+-- against today's randomly-picked theme (washed-out/unreadable mismatch).
+-- Force a recompile + colorscheme apply for today's picked theme once
+-- plugins are up, every single startup, so it never goes stale again.
+vim.api.nvim_create_autocmd("VimEnter", {
+  once = true,
+  callback = function()
+    local info = theme_cycle.ensure()
+    theme_cycle.apply(info.primary)
+  end,
+})
+
 if vim.g.neovide then
   vim.o.guifont = "JetBrainsMono Nerd Font:h13"
   vim.g.neovide_padding_top = 8
