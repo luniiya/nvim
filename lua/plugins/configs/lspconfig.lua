@@ -1,5 +1,27 @@
 dofile(vim.g.base46_cache .. "lsp")
-require "nvchad.lsp"
+
+-- NvChad's bundled LSP defaults still use vim.lsp.with, which is deprecated
+-- on current Neovim. Pass the handler options directly instead.
+local hover_handler = vim.lsp.handlers.hover
+vim.lsp.handlers["textDocument/hover"] = function(err, result, ctx, config)
+  return hover_handler(err, result, ctx, vim.tbl_extend("force", config or {}, { border = "single" }))
+end
+
+local signature_handler = vim.lsp.handlers.signature_help
+vim.lsp.handlers["textDocument/signatureHelp"] = function(err, result, ctx, config)
+  return signature_handler(err, result, ctx, vim.tbl_extend("force", config or {}, {
+    border = "single",
+    focusable = false,
+    relative = "cursor",
+  }))
+end
+
+vim.diagnostic.config {
+  virtual_text = { prefix = "" },
+  signs = true,
+  underline = true,
+  update_in_insert = false,
+}
 
 local M = {}
 local utils = require "core.utils"
@@ -7,10 +29,6 @@ local utils = require "core.utils"
 -- export on_attach & capabilities for custom lspconfigs
 M.on_attach = function(client, bufnr)
   utils.load_mappings("lspconfig", { buffer = bufnr })
-
-  if client.server_capabilities.signatureHelpProvider then
-    require("nvchad.signature").setup(client)
-  end
 end
 
 -- disable semantic tokens

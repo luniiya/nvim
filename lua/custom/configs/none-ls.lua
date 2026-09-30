@@ -40,8 +40,6 @@ defaults.capabilities.textDocument.completion.completionItem = {
 }
 
 local formatting = null_ls.builtins.formatting
-local diagnostics = null_ls.builtins.diagnostics
-local code_actions = null_ls.builtins.code_actions
 
 local sources = {}
 
@@ -55,11 +53,6 @@ end
 
 if vim.fn.executable "prettierd" == 1 then
   table.insert(sources, formatting.prettierd)
-end
-
-if vim.fn.executable "eslint_d" == 1 then
-  table.insert(sources, diagnostics.eslint_d)
-  table.insert(sources, code_actions.eslint_d)
 end
 
 null_ls.setup {

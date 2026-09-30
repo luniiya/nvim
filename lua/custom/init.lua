@@ -10,6 +10,9 @@ vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
     local info = theme_cycle.ensure()
     theme_cycle.apply(info.primary)
+    pcall(function()
+      require("custom.configs.blink_highlights").apply()
+    end)
   end,
 })
 

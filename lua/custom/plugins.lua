@@ -5,34 +5,53 @@ local plugins = {
       build = ":UpdateRemotePlugins",
       init = function()
           -- these are examples, not defaults. Please see the readme
-          vim.g.molten_image_provider = "image.nvim"
+          if vim.uv.guess_handle(1) == "tty" then
+            vim.g.molten_image_provider = "image.nvim"
+          end
           vim.g.molten_output_win_max_height = 20
       end,
   },
-  -- {
-  --   -- see the image.nvim readme for more information about configuring this plugin
-  --   "3rd/image.nvim",
-  --   opts = {
-  --     backend = "kitty", -- whatever backend you would like to use
-  --     max_width = 100,
-  --     max_height = 12,
-  --     max_height_window_percentage = math.huge,
-  --     max_width_window_percentage = math.huge,
-  --     window_overlap_clear_enabled = true, -- toggles images when windows are overlapped
-  --     window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "" },
-  --     integrations = {
-  --       markdown = {
-  --         enabled = true,
-  --         clear_in_insert_mode = false,
-  --         download_remote_images = true,
-  --         only_render_image_at_cursor = false,
-  --         floating_windows = false, -- if true, images will be rendered in floating markdown windows
-  --         filetypes = { "markdown", "vimwiki" }, -- markdown extensions (ie. quarto) can go here
-  --       },
-  --     },
-  --   },
-  --   lazy = false,
-  -- },
+  {
+    -- see the image.nvim readme for more information about configuring this plugin
+    "3rd/image.nvim",
+    cond = function()
+      return vim.uv.guess_handle(1) == "tty"
+    end,
+    opts = {
+      backend = "kitty", -- ghostty and kitty both speak the kitty graphics protocol
+      max_width = 100,
+      max_height = 12,
+      max_height_window_percentage = math.huge,
+      max_width_window_percentage = math.huge,
+      window_overlap_clear_enabled = true, -- toggles images when windows are overlapped
+      window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "" },
+      integrations = {
+        markdown = {
+          enabled = true,
+          clear_in_insert_mode = false,
+          download_remote_images = true,
+          only_render_image_at_cursor = false,
+          floating_windows = false, -- if true, images will be rendered in floating markdown windows
+          filetypes = { "markdown", "vimwiki" }, -- markdown extensions (ie. quarto) can go here
+        },
+      },
+    },
+    lazy = false,
+  },
+  {
+    "mfussenegger/nvim-dap",
+    event = "VeryLazy",
+    dependencies = {
+      {
+        "rcarriga/nvim-dap-ui",
+        dependencies = { "nvim-neotest/nvim-nio" },
+      },
+      "jay-babu/mason-nvim-dap.nvim",
+    },
+    config = function()
+      require "custom.configs.dap"
+    end,
+  },
   {
     "christoomey/vim-tmux-navigator",
     lazy = false,
@@ -55,6 +74,21 @@ local plugins = {
     config = function ()
       require "plugins.configs.lspconfig"
       require "custom.configs.lspconfig"
+    end,
+  },
+  {
+    -- mason's own `ensure_installed` is documentation only, it never actually
+    -- installs anything on its own; this plugin is what makes that list real.
+    "WhoIsSethDaniel/mason-tool-installer.nvim",
+    dependencies = { "williamboman/mason.nvim" },
+    event = "VimEnter",
+    opts = {
+      ensure_installed = require("plugins.configs.mason").ensure_installed,
+      auto_update = false,
+      run_on_start = true,
+    },
+    config = function(_, opts)
+      require("mason-tool-installer").setup(opts)
     end,
   },
   {
@@ -199,16 +233,11 @@ local plugins = {
     },
   },
   {
+    -- select-only now; input is handled by snacks.nvim below
     "stevearc/dressing.nvim",
     event = "VeryLazy",
     opts = {
-      input = {
-        default_prompt = "➤ ",
-        win_options = {
-          winblend = 10,
-        },
-        insert_only = false,
-      },
+      input = { enabled = false },
       select = {
         backend = { "telescope", "builtin" },
         builtin = {
@@ -244,29 +273,78 @@ local plugins = {
     },
   },
   {
-    "folke/zen-mode.nvim",
-    cmd = "ZenMode",
-    dependencies = {
-      "folke/twilight.nvim",
-    },
+    -- folds zen-mode.nvim + twilight.nvim (dimming) + dressing's input half
+    -- into one of folke's own plugins instead of three
+    "folke/snacks.nvim",
+    priority = 1000,
+    lazy = false,
     opts = {
-      window = {
-        backdrop = 0.9,
-        width = 0.6,
-        options = {
-          number = false,
-          relativenumber = false,
+      input = { enabled = true },
+      indent = { enabled = true },
+      scroll = { enabled = true },
+      statuscolumn = { enabled = true },
+      words = { enabled = true },
+      zen = {
+        toggles = { dim = true },
+        win = {
+          backdrop = { transparent = true, blend = 90 },
+          width = 0.6,
         },
-      },
-      plugins = {
-        twilight = { enabled = true },
-        gitsigns = { enabled = true },
-        tmux = { enabled = false },
       },
     },
     keys = {
-      { "<leader>zz", "<cmd>ZenMode<cr>", desc = "Toggle Zen Mode" },
+      { "<leader>zz", function() require("snacks").zen() end, desc = "Toggle Zen Mode" },
     },
+  },
+  {
+    "saghen/blink.cmp",
+    event = "InsertEnter",
+    dependencies = { "L3MON4D3/LuaSnip" },
+    version = "1.*",
+    opts = {
+      keymap = { preset = "super-tab" },
+      appearance = { nerd_font_variant = "mono" },
+      completion = {
+        documentation = { auto_show = true },
+        menu = {
+          draw = {
+            columns = { { "kind_icon" }, { "label", "label_description", gap = 1 }, { "kind" } },
+          },
+        },
+      },
+      snippets = { preset = "luasnip" },
+      sources = {
+        default = { "lsp", "path", "snippets", "buffer" },
+      },
+      signature = { enabled = true },
+    },
+    config = function(_, opts)
+      require("blink.cmp").setup(opts)
+      require("custom.configs.blink_highlights").apply()
+    end,
+  },
+  {
+    "echasnovski/mini.nvim",
+    event = "VeryLazy",
+    config = function()
+      -- replaces nvim-autopairs
+      require("mini.pairs").setup()
+      -- vim-surround-style motions; moved off the bare "s"/"sX" prefix
+      -- since flash.nvim already owns "s"/"S" for jumping in this config
+      require("mini.surround").setup {
+        mappings = {
+          add = "gsa",
+          delete = "gsd",
+          find = "gsf",
+          find_left = "gsF",
+          highlight = "gsh",
+          replace = "gsr",
+          update_n_lines = "gsn",
+        },
+      }
+      -- better a/i text objects (functions, arguments, etc.)
+      require("mini.ai").setup()
+    end,
   },
 }
 

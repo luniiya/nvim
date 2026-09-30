@@ -58,6 +58,11 @@ M.gitsigns = {
     changedelete = { text = "~" },
     untracked = { text = "│" },
   },
+  current_line_blame = true,
+  current_line_blame_opts = {
+    delay = 500,
+    virt_text_pos = "eol",
+  },
   on_attach = function(bufnr)
     utils.load_mappings("gitsigns", { buffer = bufnr })
   end,
